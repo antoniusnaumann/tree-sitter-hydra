@@ -47,15 +47,25 @@
 "as" @keyword
 
 ; `parallel`, `race` and every compound built on them are coloured as one unit
-; (§13). A theme that does not know `keyword.control.concurrent` falls back to
-; `keyword.control`.
+; (§13), and as control flow of the same weight as `return`: opening a block is
+; where a program stops being one line of execution, which is worth seeing from
+; across the file. `keyword.control.return` is the scope every theme already
+; reserves for exactly that.
 [
   "parallel"
   "race"
-] @keyword.control.concurrent
+] @keyword.control.return
 
-; The trail separator — not logical or; Hydra has no `||` operator (§2).
-"||" @punctuation.special
+; The tail of a compound keyword goes with its head, or the keyword reads as two.
+(parallel_for_statement
+  "for" @keyword.control.return)
+
+(parallel_while_statement
+  "while" @keyword.control.return)
+
+; The trail separator — not logical or; Hydra has no `||` operator (§2). It is
+; where the trails part, so it is control flow too.
+"||" @keyword.control.return
 
 ; ------------------------------------------------------------------ operators
 

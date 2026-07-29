@@ -51,7 +51,7 @@ parse.
 
 | File | What it does |
 |---|---|
-| `queries/highlights.scm` | The token classes of spec §13, under the capture names Helix and Neovim themes know. `parallel`, `race` and their compounds are `@keyword.control.concurrent`, which falls back to `keyword.control` in a theme that has not heard of it; `\|\|` is `@punctuation.special`. |
+| `queries/highlights.scm` | The token classes of spec §13, under the capture names Helix and Neovim themes know. `parallel`, `race`, the tails of their compounds and `\|\|` are all `@keyword.control.return`: opening a block is where a program stops being one line of execution, and that is worth the same weight the language's other control flow gets. |
 | `queries/indents.scm` | One level per block, closed by `end`. Indentation is cosmetic in Hydra — `hydra fmt` owns the canonical form, including the column padding inside a parallel block, which no editor should try to guess. |
 | `queries/textobjects.scm` | Functions, parameters, entries, comments, and one cell as an entry. |
 | `queries/locals.scm` | `:=` declarations, parameters, loop variables and labels. A cell stands in for a trail's scope: everything a trail declares with `:=` is local to it and gone at the join (§6). |

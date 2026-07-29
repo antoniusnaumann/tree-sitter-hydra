@@ -1,0 +1,163 @@
+================================================================================
+Declaration and assignment
+================================================================================
+
+x := 1
+x = 2
+d.k = 3
+d[k] = 4
+mod::x = 5
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    name: (identifier)
+    value: (number))
+  (assignment
+    target: (identifier)
+    value: (number))
+  (assignment
+    target: (field_expression
+      object: (identifier)
+      key: (identifier))
+    value: (number))
+  (assignment
+    target: (index_expression
+      object: (identifier)
+      index: (identifier))
+    value: (number))
+  (assignment
+    target: (qualified_identifier
+      module: (identifier)
+      name: (identifier))
+    value: (number)))
+
+================================================================================
+A statement is one line, and a comment runs to the end of it
+================================================================================
+
+use fmt // http exports decode too
+
+REGIONS := ["eu", "us"] // three of them, once
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (use_statement
+    module: (identifier))
+  (comment)
+  (declaration
+    name: (identifier)
+    value: (list
+      (string
+        (string_content))
+      (string
+        (string_content))))
+  (comment))
+
+================================================================================
+A file that does not end in a newline still ends its last statement
+================================================================================
+
+print("done")
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (call_expression
+      function: (identifier)
+      arguments: (arguments
+        (argument
+          (string
+            (string_content)))))))
+
+================================================================================
+Function declaration, defaults and reference parameters
+================================================================================
+
+fn warm(name, &host, retries = 3, backoff = retries * 2)
+	return host
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        name: (identifier))
+      (parameter
+        name: (identifier))
+      (parameter
+        name: (identifier)
+        default: (number))
+      (parameter
+        name: (identifier)
+        default: (binary_expression
+          left: (identifier)
+          right: (number))))
+    body: (block
+      (return_statement
+        (identifier)))))
+
+================================================================================
+Named arguments and references at the call site
+================================================================================
+
+describe(detail = "backup", region = "ap")
+push(&seen, region)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (call_expression
+      function: (identifier)
+      arguments: (arguments
+        (argument
+          name: (identifier)
+          (string
+            (string_content)))
+        (argument
+          name: (identifier)
+          (string
+            (string_content))))))
+  (expression_statement
+    (call_expression
+      function: (identifier)
+      arguments: (arguments
+        (argument
+          (reference_expression
+            target: (identifier)))
+        (argument
+          (identifier))))))
+
+================================================================================
+Labels, break and continue
+================================================================================
+
+while alive() as outer
+	break outer
+	continue outer
+	break trail
+	break
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (while_statement
+    condition: (call_expression
+      function: (identifier)
+      arguments: (arguments))
+    label: (label
+      name: (identifier))
+    body: (block
+      (break_statement
+        label: (identifier))
+      (continue_statement
+        label: (identifier))
+      (break_statement)
+      (break_statement))))

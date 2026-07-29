@@ -1,0 +1,147 @@
+================================================================================
+Rows and cells
+================================================================================
+
+parallel
+	eu = warm("eu") || us = warm("us")
+	smoke(eu)       || smoke(us)
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (assignment
+          target: (identifier)
+          value: (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (argument
+                (string
+                  (string_content)))))))
+      (cell
+        (assignment
+          target: (identifier)
+          value: (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (argument
+                (string
+                  (string_content))))))))
+    (row
+      (cell
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (argument
+                (identifier))))))
+      (cell
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (argument
+                (identifier)))))))))
+
+================================================================================
+Cells may be empty, and separators may never be omitted
+================================================================================
+
+race as decided
+	winner = "short" || slow := 1
+	                 || slow = slow + 1
+	                 ||
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    label: (label
+      name: (identifier))
+    (row
+      (cell
+        (assignment
+          target: (identifier)
+          value: (string
+            (string_content))))
+      (cell
+        (declaration
+          name: (identifier)
+          value: (number))))
+    (row
+      (cell
+        (assignment
+          target: (identifier)
+          value: (binary_expression
+            left: (identifier)
+            right: (number)))))
+    (row)))
+
+================================================================================
+A block inside a cell continues down its own column
+================================================================================
+
+parallel
+	if ready  || for r in rs
+		go()  ||   ping(r)
+	end       || end
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (if_head
+          condition: (identifier)))
+      (cell
+        (for_head
+          variable: (identifier)
+          iterable: (identifier))))
+    (row
+      (cell
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments))))
+      (cell
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (argument
+                (identifier)))))))
+    (row
+      (cell
+        (end_marker))
+      (cell
+        (end_marker)))))
+
+================================================================================
+The block's own `end` is the first line inside it with zero separators
+================================================================================
+
+parallel
+	a() || b()
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments))))
+      (cell
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments)))))))

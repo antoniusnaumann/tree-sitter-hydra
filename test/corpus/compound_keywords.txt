@@ -1,0 +1,133 @@
+================================================================================
+`else if` is one keyword
+================================================================================
+
+if a
+	x()
+else if b
+	y()
+else
+	z()
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (if_statement
+    condition: (identifier)
+    consequence: (block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments))))
+    (else_if_clause
+      condition: (identifier)
+      body: (block
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments)))))
+    (else_clause
+      body: (block
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments)))))))
+
+================================================================================
+`else` and a newline is not `else if` — it is a nested statement of its own
+================================================================================
+
+if a
+	x()
+else
+	if b
+		y()
+	end
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (if_statement
+    condition: (identifier)
+    consequence: (block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments))))
+    (else_clause
+      body: (block
+        (if_statement
+          condition: (identifier)
+          consequence: (block
+            (expression_statement
+              (call_expression
+                function: (identifier)
+                arguments: (arguments)))))))))
+
+================================================================================
+parallel for, race for, parallel while, race while
+================================================================================
+
+parallel for region in regions as fan
+	warm(region)
+end
+
+race for region in regions
+	warm(region)
+end
+
+parallel while alive()
+	tick()
+end
+
+race while alive() as w
+	tick()
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_for_statement
+    variable: (identifier)
+    iterable: (identifier)
+    label: (label
+      name: (identifier))
+    body: (block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (argument
+              (identifier)))))))
+  (parallel_for_statement
+    variable: (identifier)
+    iterable: (identifier)
+    body: (block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (argument
+              (identifier)))))))
+  (parallel_while_statement
+    condition: (call_expression
+      function: (identifier)
+      arguments: (arguments))
+    body: (block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments)))))
+  (parallel_while_statement
+    condition: (call_expression
+      function: (identifier)
+      arguments: (arguments))
+    label: (label
+      name: (identifier))
+    body: (block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments))))))

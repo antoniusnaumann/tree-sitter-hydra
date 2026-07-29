@@ -1,0 +1,230 @@
+================================================================================
+Precedence is Python's, not C's
+================================================================================
+
+x := flags | MASK == y
+z := a or b and not c
+w := 1 + 2 * 3 - -4
+s := a >>> 2 << 1
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    name: (identifier)
+    value: (binary_expression
+      left: (binary_expression
+        left: (identifier)
+        right: (identifier))
+      right: (identifier)))
+  (declaration
+    name: (identifier)
+    value: (binary_expression
+      left: (identifier)
+      right: (binary_expression
+        left: (identifier)
+        right: (unary_expression
+          operand: (identifier)))))
+  (declaration
+    name: (identifier)
+    value: (binary_expression
+      left: (binary_expression
+        left: (number)
+        right: (binary_expression
+          left: (number)
+          right: (number)))
+      right: (unary_expression
+        operand: (number))))
+  (declaration
+    name: (identifier)
+    value: (binary_expression
+      left: (binary_expression
+        left: (identifier)
+        right: (number))
+      right: (number))))
+
+================================================================================
+A dot in leading position opens a symbol; a dot after an expression is a lookup
+================================================================================
+
+d := { .a : 5, ."x-req-id" : 17 }
+v := d.a
+q := d."content-type"
+n := .null
+t := 3.5
+k := 3.a
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    name: (identifier)
+    value: (dict
+      (pair
+        key: (symbol
+          name: (identifier))
+        value: (number))
+      (pair
+        key: (symbol
+          name: (string
+            (string_content)))
+        value: (number))))
+  (declaration
+    name: (identifier)
+    value: (field_expression
+      object: (identifier)
+      key: (identifier)))
+  (declaration
+    name: (identifier)
+    value: (field_expression
+      object: (identifier)
+      key: (string
+        (string_content))))
+  (declaration
+    name: (identifier)
+    value: (symbol
+      name: (identifier)))
+  (declaration
+    name: (identifier)
+    value: (number))
+  (declaration
+    name: (identifier)
+    value: (field_expression
+      object: (number)
+      key: (identifier))))
+
+================================================================================
+Strings interpolate, and an interpolation may contain strings of its own
+================================================================================
+
+print("hi \(name), \(a + b) \\ \" \(f("\(inner)"))")
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (call_expression
+      function: (identifier)
+      arguments: (arguments
+        (argument
+          (string
+            (string_content)
+            (interpolation
+              (identifier))
+            (string_content)
+            (interpolation
+              (binary_expression
+                left: (identifier)
+                right: (identifier)))
+            (string_content)
+            (escape_sequence)
+            (string_content)
+            (escape_sequence)
+            (string_content)
+            (interpolation
+              (call_expression
+                function: (identifier)
+                arguments: (arguments
+                  (argument
+                    (string
+                      (interpolation
+                        (identifier)))))))))))))
+
+================================================================================
+A quoted symbol may interpolate
+================================================================================
+
+k := ."\(prefix)-id"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    name: (identifier)
+    value: (symbol
+      name: (string
+        (interpolation
+          (identifier))
+        (string_content)))))
+
+================================================================================
+Closures are single-expression or multi-line, decided by what follows the `)`
+================================================================================
+
+f := fn(a, b) a + b
+g := fn(&box)
+	box.count = box.count + 1
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    name: (identifier)
+    value: (closure
+      parameters: (parameters
+        (parameter
+          name: (identifier))
+        (parameter
+          name: (identifier)))
+      body: (binary_expression
+        left: (identifier)
+        right: (identifier))))
+  (declaration
+    name: (identifier)
+    value: (closure
+      parameters: (parameters
+        (parameter
+          name: (identifier)))
+      body: (block
+        (assignment
+          target: (field_expression
+            object: (identifier)
+            key: (identifier))
+          value: (binary_expression
+            left: (field_expression
+              object: (identifier)
+              key: (identifier))
+            right: (number)))))))
+
+================================================================================
+Qualified names, with and without a module
+================================================================================
+
+m := json::decode(s)
+n := ::push(&rows, 1)
+p := mod::x[-1].y
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    name: (identifier)
+    value: (call_expression
+      function: (qualified_identifier
+        module: (identifier)
+        name: (identifier))
+      arguments: (arguments
+        (argument
+          (identifier)))))
+  (declaration
+    name: (identifier)
+    value: (call_expression
+      function: (qualified_identifier
+        name: (identifier))
+      arguments: (arguments
+        (argument
+          (reference_expression
+            target: (identifier)))
+        (argument
+          (number)))))
+  (declaration
+    name: (identifier)
+    value: (field_expression
+      object: (index_expression
+        object: (qualified_identifier
+          module: (identifier)
+          name: (identifier))
+        index: (unary_expression
+          operand: (number)))
+      key: (identifier))))

@@ -126,31 +126,17 @@
 
 (comment) @comment
 
-; A symbol is an interned tag (§5). The children are captured too, so the dot
-; and the name are never coloured apart.
-(symbol) @string.special.symbol
+; A symbol is an interned tag compared by identity (§5) — `.null` and `.true`
+; are nothing but the ones the language happens to lean on, so every symbol is
+; coloured alike. The children are captured too, so the dot and the name are
+; never coloured apart.
+(symbol) @constant.builtin
 
 (symbol
-  (identifier) @string.special.symbol)
-
-(symbol
-  (string) @string.special.symbol)
-
-; `.null` and `.false` are the falsy ones (§5); nothing else is special about
-; them, but reading them as constants is what the reference colouring does.
-((symbol) @constant.builtin.boolean
-  (#any-of? @constant.builtin.boolean ".true" ".false"))
-
-((symbol
-  (identifier) @constant.builtin.boolean)
-  (#any-of? @constant.builtin.boolean "true" "false"))
-
-((symbol) @constant.builtin
-  (#eq? @constant.builtin ".null"))
-
-((symbol
   (identifier) @constant.builtin)
-  (#eq? @constant.builtin "null"))
+
+(symbol
+  (string) @constant.builtin)
 
 ; ------------------------------------------------------------------ functions
 
@@ -166,10 +152,10 @@
     key: (identifier) @function))
 
 (function_definition
-  name: (identifier) @function.declaration)
+  name: (identifier) @function)
 
 (function_head
-  name: (identifier) @function.declaration)
+  name: (identifier) @function)
 
 (parameter
   name: (identifier) @variable.parameter)

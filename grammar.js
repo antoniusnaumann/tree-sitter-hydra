@@ -29,6 +29,22 @@
 
 // Loosest to tightest, from the table in spec §3. Python's ordering, not C's,
 // so that `flags | MASK == x` groups as `(flags | MASK) == x`.
+// A compound assignment names its place once: the target is evaluated once,
+// and the read and the write are one indivisible step (QUESTIONS.md §20).
+const COMPOUND_ASSIGN = [
+  "+=",
+  "-=",
+  "*=",
+  "/=",
+  "%=",
+  "|=",
+  "&=",
+  "^=",
+  "<<=",
+  ">>=",
+  ">>>=",
+];
+
 const PREC = {
   or: 1,
   and: 2,
@@ -53,6 +69,14 @@ export default grammar({
   word: ($) => $.identifier,
 
   supertypes: ($) => [$._statement, $._expression],
+
+  conflicts: ($) => [
+    // A comma list of targets belongs to whichever of `:=` and `=` follows it,
+    // and a name at the head of one does not say which: `a, b := …` declares
+    // and `a, b = …` assigns, so the name is either a declaration's or an
+    // expression (channels §6.2).
+    [$.declaration, $._expression],
+  ],
 
   rules: {
     source_file: ($) =>
@@ -107,20 +131,39 @@ export default grammar({
       seq("(", optional(seq($.parameter, repeat(seq(",", $.parameter)))), ")"),
 
     // `&name` requires the *call* to pass a reference (§5.1); `name = expr`
-    // gives a default, and the two never combine.
+    // gives a default, and the two never combine. `name*` collects the rest of
+    // the positional arguments into a list, and a bare `*` collects nothing —
+    // either way, everything after it can be filled by name only
+    // (channels §6.1).
     parameter: ($) =>
-      seq(
-        optional("&"),
-        field("name", $.identifier),
-        optional(seq("=", field("default", $._expression))),
+      choice(
+        "*",
+        seq(
+          optional("&"),
+          field("name", $.identifier),
+          optional("*"),
+          optional(seq("=", field("default", $._expression))),
+        ),
       ),
 
-    // `x := expr` declares and shadows; `x = expr` assigns outward (§6).
+    // `x := expr` declares and shadows; `x = expr` assigns outward (§6). More
+    // than one target takes a call that answers with several values, of which
+    // the first is the meaningful one (channels §6.2).
     declaration: ($) =>
-      seq(field("name", $.identifier), ":=", field("value", $._expression)),
+      seq(
+        field("name", $.identifier),
+        repeat(seq(",", field("name", $.identifier))),
+        ":=",
+        field("value", $._expression),
+      ),
 
     assignment: ($) =>
-      seq(field("target", $._expression), "=", field("value", $._expression)),
+      seq(
+        field("target", $._expression),
+        repeat(seq(",", field("target", $._expression))),
+        field("operator", choice("=", ...COMPOUND_ASSIGN)),
+        field("value", $._expression),
+      ),
 
     if_statement: ($) =>
       seq(
@@ -265,7 +308,10 @@ export default grammar({
     continue_statement: ($) =>
       seq("continue", optional(field("label", $.identifier))),
 
-    return_statement: ($) => seq("return", optional($._expression)),
+    // `return a, b`: the first value is the meaningful one and the rest are
+    // additional information (channels §6.2).
+    return_statement: ($) =>
+      seq("return", optional(seq($._expression, repeat(seq(",", $._expression))))),
 
     expression_statement: ($) => $._expression,
 

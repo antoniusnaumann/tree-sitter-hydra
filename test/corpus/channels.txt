@@ -1,0 +1,192 @@
+================================================================================
+Variadic and bare-star parameters
+================================================================================
+
+fn log(prefix, values*, sep = " ")
+	print(prefix)
+end
+
+fn retry(host, *, attempts = 3)
+	print(host)
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        name: (identifier))
+      (parameter
+        name: (identifier))
+      (parameter
+        name: (identifier)
+        default: (string
+          (string_content))))
+    body: (block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (argument
+              (identifier)))))))
+  (function_definition
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        name: (identifier))
+      (parameter)
+      (parameter
+        name: (identifier)
+        default: (number)))
+    body: (block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (argument
+              (identifier))))))))
+
+================================================================================
+Several targets for a call that answers with several values
+================================================================================
+
+value, ch := receive()
+value, ch = receive()
+d.a, d.b = split(x)
+one := receive()
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    name: (identifier)
+    name: (identifier)
+    value: (call_expression
+      function: (identifier)
+      arguments: (arguments)))
+  (assignment
+    target: (identifier)
+    target: (identifier)
+    value: (call_expression
+      function: (identifier)
+      arguments: (arguments)))
+  (assignment
+    target: (field_expression
+      object: (identifier)
+      key: (identifier))
+    target: (field_expression
+      object: (identifier)
+      key: (identifier))
+    value: (call_expression
+      function: (identifier)
+      arguments: (arguments
+        (argument
+          (identifier)))))
+  (declaration
+    name: (identifier)
+    value: (call_expression
+      function: (identifier)
+      arguments: (arguments))))
+
+================================================================================
+Returning several values
+================================================================================
+
+fn parse(text)
+	return decode(text), len(text)
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        name: (identifier)))
+    body: (block
+      (return_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (argument
+              (identifier))))
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (argument
+              (identifier))))))))
+
+================================================================================
+The channel calls inside a block
+================================================================================
+
+parallel
+	send(job, 1, mode = .detach) || work, ch := receive(0)
+	                             || print(channel())
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (argument
+                (identifier))
+              (argument
+                (number))
+              (argument
+                name: (identifier)
+                (symbol
+                  name: (identifier)))))))
+      (cell
+        (declaration
+          name: (identifier)
+          name: (identifier)
+          value: (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (argument
+                (number)))))))
+    (row
+      (cell
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (argument
+                (call_expression
+                  function: (identifier)
+                  arguments: (arguments))))))))))
+
+================================================================================
+Compound assignment names its place once
+================================================================================
+
+a *= 50
+a -= i
+i += 1
+mask >>>= 2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    target: (identifier)
+    value: (number))
+  (assignment
+    target: (identifier)
+    value: (identifier))
+  (assignment
+    target: (identifier)
+    value: (number))
+  (assignment
+    target: (identifier)
+    value: (number)))

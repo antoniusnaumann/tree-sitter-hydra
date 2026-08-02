@@ -72,6 +72,17 @@
 [
   ":="
   "="
+  "+="
+  "-="
+  "*="
+  "/="
+  "%="
+  "|="
+  "&="
+  "^="
+  "<<="
+  ">>="
+  ">>>="
   "=="
   "!="
   "==="
@@ -163,10 +174,12 @@
 (argument
   name: (identifier) @variable.parameter)
 
-; The five builtins of the stdlib spec, plus the one language primitive.
+; The five builtins of the stdlib spec, the one language primitive, and the
+; three channel calls, which are lexically scoped to a block (channels §6.4).
 (call_expression
   function: (identifier) @function.builtin
-  (#any-of? @function.builtin "print" "has" "get" "len" "push" "alive"))
+  (#any-of? @function.builtin
+    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel"))
 
 ; `::name` with the module omitted is the language's own namespace, which is how
 ; a builtin is reached past a shadow (§7). The anchor is what says "no module".
@@ -175,7 +188,12 @@
     .
     "::"
     name: (identifier) @function.builtin)
-  (#any-of? @function.builtin "print" "has" "get" "len" "push" "alive"))
+  (#any-of? @function.builtin
+    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel"))
+
+; The `*` that closes a parameter list is not multiplication (channels §6.1).
+(parameter
+  "*" @punctuation.special)
 
 ; ----------------------------------------------------------------- namespaces
 

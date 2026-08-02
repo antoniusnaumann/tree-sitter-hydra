@@ -15,6 +15,9 @@
 (declaration
   name: (identifier) @local.definition.variable)
 
+(assignment
+  target: (identifier) @local.reference)
+
 (function_definition
   name: (identifier) @local.definition.function)
 

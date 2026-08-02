@@ -47,6 +47,19 @@ Anything a cell cannot hold, it does not accept: a `parallel` or `race` block ma
 not be written syntactically inside a cell (§4), and here it simply does not
 parse.
 
+## Auto-channels
+
+The grammar covers `spec/hydra_channels.md` too: variadic parameters (`values*`
+and the bare `*`), a comma list of targets on the left of `:=` and `=`, and
+`return a, b`. `send`, `receive` and `channel` are ordinary calls — they are
+lexically scoped to a block, but that is `hydra check`'s rule, not the parser's
+— so they need nothing from the grammar beyond joining the builtin highlight
+list.
+
+The one conflict the grammar declares comes from here: after a name at the head
+of a comma list, `a, b := …` declares and `a, b = …` assigns, and the name alone
+does not say which.
+
 ## Queries
 
 | File | What it does |

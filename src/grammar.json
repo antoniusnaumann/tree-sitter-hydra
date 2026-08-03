@@ -2566,7 +2566,7 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "identifier"
+                "name": "symbol_name"
               },
               {
                 "type": "SYMBOL",
@@ -2576,6 +2576,13 @@
           }
         }
       ]
+    },
+    "symbol_name": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[A-Za-z_][A-Za-z0-9_]*(-[A-Za-z0-9_]+)*"
+      }
     },
     "string": {
       "type": "SEQ",

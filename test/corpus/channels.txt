@@ -145,7 +145,7 @@ end
               (argument
                 name: (identifier)
                 (symbol
-                  name: (identifier)))))))
+                  name: (symbol_name)))))))
       (cell
         (declaration
           name: (identifier)

@@ -1312,11 +1312,11 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "string",
             "named": true
           },
           {
-            "type": "string",
+            "type": "symbol_name",
             "named": true
           }
         ]
@@ -1674,6 +1674,10 @@
   },
   {
     "type": "string_content",
+    "named": true
+  },
+  {
+    "type": "symbol_name",
     "named": true
   },
   {

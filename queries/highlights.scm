@@ -144,7 +144,7 @@
 (symbol) @constant.builtin
 
 (symbol
-  (identifier) @constant.builtin)
+  (symbol_name) @constant.builtin)
 
 (symbol
   (string) @constant.builtin)

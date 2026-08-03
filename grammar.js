@@ -457,9 +457,18 @@ export default grammar({
 
     pair: ($) => seq(field("key", $.symbol), ":", field("value", $._expression)),
 
-    // `.name`, `."content-type"`, and `."\(prefix)-id"` — a quoted symbol may
-    // interpolate, which is how a symbol is built from data (§2).
-    symbol: ($) => seq(".", field("name", choice($.identifier, $.string))),
+    // `.name`, `.x-req-id`, `."not a name"`, and `."\(prefix)-id"` — a quoted
+    // symbol may interpolate, which is how a symbol is built from data (§2).
+    //
+    // A symbol's name may contain `-`, as long as it is internal: subtracting
+    // one symbol from another is nonsense, so `.x-req-id` can only have been
+    // meant as one name. A *key lookup* is not a symbol literal and keeps the
+    // `-` as an operator, which is why `field_expression` takes a plain
+    // identifier and this does not.
+    symbol: ($) => seq(".", field("name", choice($.symbol_name, $.string))),
+
+    symbol_name: (_) =>
+      token.immediate(/[A-Za-z_][A-Za-z0-9_]*(-[A-Za-z0-9_]+)*/),
 
     string: ($) =>
       seq(

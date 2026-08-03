@@ -44,15 +44,16 @@ s := a >>> 2 << 1
       right: (number))))
 
 ================================================================================
-A dot in leading position opens a symbol; a dot after an expression is a lookup
+A symbol's name may contain `-`; a key lookup keeps the `-` as an operator
 ================================================================================
 
-d := { .a : 5, ."x-req-id" : 17 }
+d := { .a : 5, .x-req-id : 17 }
 v := d.a
 q := d."content-type"
 n := .null
 t := 3.5
 k := 3.a
+m := d.total-1
 
 --------------------------------------------------------------------------------
 
@@ -62,12 +63,11 @@ k := 3.a
     value: (dict
       (pair
         key: (symbol
-          name: (identifier))
+          name: (symbol_name))
         value: (number))
       (pair
         key: (symbol
-          name: (string
-            (string_content)))
+          name: (symbol_name))
         value: (number))))
   (declaration
     name: (identifier)
@@ -83,7 +83,7 @@ k := 3.a
   (declaration
     name: (identifier)
     value: (symbol
-      name: (identifier)))
+      name: (symbol_name)))
   (declaration
     name: (identifier)
     value: (number))
@@ -91,7 +91,14 @@ k := 3.a
     name: (identifier)
     value: (field_expression
       object: (number)
-      key: (identifier))))
+      key: (identifier)))
+  (declaration
+    name: (identifier)
+    value: (binary_expression
+      left: (field_expression
+        object: (identifier)
+        key: (identifier))
+      right: (number))))
 
 ================================================================================
 Strings interpolate, and an interpolation may contain strings of its own

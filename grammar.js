@@ -115,7 +115,15 @@ export default grammar({
         $.expression_statement,
       ),
 
-    use_statement: ($) => seq("use", field("module", $.identifier)),
+    // `use fs` brings a module in for qualified calling only; `use fs as *`
+    // binds its names unqualified as well, and `use fs as filesystem` puts the
+    // qualified form under that name instead (§7).
+    use_statement: ($) =>
+      seq(
+        "use",
+        field("module", $.identifier),
+        optional(seq("as", field("alias", choice("*", $.identifier)))),
+      ),
 
     function_definition: ($) =>
       seq(
@@ -375,13 +383,15 @@ export default grammar({
 
     // `d.a` is exactly `d[.a]` (§5) — a dot directly after an expression is a
     // key lookup, and a dot in leading position opens a symbol.
+    // The key may also be qualified — `path.fs::read(…)` is `fs::read(path, …)`
+    // (§5.2, §7) — which only means anything with a call after it.
     field_expression: ($) =>
       prec(
         PREC.postfix,
         seq(
           field("object", $._expression),
           ".",
-          field("key", choice($.identifier, $.string)),
+          field("key", choice($.identifier, $.string, $.qualified_identifier)),
         ),
       ),
 

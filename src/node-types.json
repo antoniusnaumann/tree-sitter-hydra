@@ -671,6 +671,10 @@
             "named": true
           },
           {
+            "type": "qualified_identifier",
+            "named": true
+          },
+          {
             "type": "string",
             "named": true
           }
@@ -1361,6 +1365,20 @@
     "type": "use_statement",
     "named": true,
     "fields": {
+      "alias": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "*",
+            "named": false
+          },
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "module": {
         "multiple": false,
         "required": true,

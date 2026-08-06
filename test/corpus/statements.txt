@@ -161,3 +161,65 @@ end
         label: (identifier))
       (break_statement)
       (break_statement))))
+
+================================================================================
+The three forms of `use`
+================================================================================
+
+use fs
+use fs as *
+use fs as filesystem
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (use_statement
+    module: (identifier))
+  (use_statement
+    module: (identifier))
+  (use_statement
+    module: (identifier)
+    alias: (identifier)))
+
+================================================================================
+A call through a dot, qualified and not
+================================================================================
+
+text := path.fs::read(fallback = "")
+size := path.size()
+marked := &rows.fs::push(1)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    name: (identifier)
+    value: (call_expression
+      function: (field_expression
+        object: (identifier)
+        key: (qualified_identifier
+          module: (identifier)
+          name: (identifier)))
+      arguments: (arguments
+        (argument
+          name: (identifier)
+          (string)))))
+  (declaration
+    name: (identifier)
+    value: (call_expression
+      function: (field_expression
+        object: (identifier)
+        key: (identifier))
+      arguments: (arguments)))
+  (declaration
+    name: (identifier)
+    value: (reference_expression
+      target: (call_expression
+        function: (field_expression
+          object: (identifier)
+          key: (qualified_identifier
+            module: (identifier)
+            name: (identifier)))
+        arguments: (arguments
+          (argument
+            (number)))))))

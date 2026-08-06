@@ -203,14 +203,21 @@
   (#any-of? @function.builtin
     "print" "has" "get" "len" "push" "alive" "send" "receive" "channel"))
 
-; The `*` that closes a parameter list is not multiplication (channels §6.1).
+; The `*` that closes a parameter list is not multiplication (channels §6.1),
+; and neither is the one that asks for a module's names unqualified (§7).
 (parameter
+  "*" @punctuation.special)
+
+(use_statement
   "*" @punctuation.special)
 
 ; ----------------------------------------------------------------- namespaces
 
 (use_statement
   module: (identifier) @namespace)
+
+(use_statement
+  alias: (identifier) @namespace)
 
 (qualified_identifier
   module: (identifier) @namespace)

@@ -149,6 +149,18 @@
 (symbol
   (string) @constant.builtin)
 
+; -------------------------------------------------------------- keys and tags
+
+; `d.a` is a key lookup, and is exactly `d[.a]` (§5). This comes before the
+; function rules on purpose: `d.f(…)` is a *call* — the field when it holds one,
+; and otherwise `f(d, …)` (§5.2) — so the call rule below has to win over this
+; one for the same node.
+(field_expression
+  key: (identifier) @variable.other.member)
+
+(field_expression
+  key: (string) @variable.other.member)
+
 ; ------------------------------------------------------------------ functions
 
 (call_expression
@@ -202,15 +214,6 @@
 
 (qualified_identifier
   module: (identifier) @namespace)
-
-; -------------------------------------------------------------- keys and tags
-
-; `d.a` is a key lookup, and `d.a` is exactly `d[.a]` (§5).
-(field_expression
-  key: (identifier) @variable.other.member)
-
-(field_expression
-  key: (string) @variable.other.member)
 
 ; --------------------------------------------------------------------- labels
 

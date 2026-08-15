@@ -186,12 +186,13 @@
 (argument
   name: (identifier) @variable.parameter)
 
-; The five builtins of the stdlib spec, the one language primitive, and the
-; three channel calls, which are lexically scoped to a block (channels §6.4).
+; The five builtins of the stdlib spec, the language primitives — `alive()`,
+; `reject()` — and the three channel calls, which are lexically scoped to a
+; block (channels §6.4).
 (call_expression
   function: (identifier) @function.builtin
   (#any-of? @function.builtin
-    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel"))
+    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel" "reject"))
 
 ; `::name` with the module omitted is the language's own namespace, which is how
 ; a builtin is reached past a shadow (§7). The anchor is what says "no module".
@@ -201,7 +202,7 @@
     "::"
     name: (identifier) @function.builtin)
   (#any-of? @function.builtin
-    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel"))
+    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel" "reject"))
 
 ; The `*` that closes a parameter list is not multiplication (channels §6.1),
 ; and neither is the one that asks for a module's names unqualified (§7).

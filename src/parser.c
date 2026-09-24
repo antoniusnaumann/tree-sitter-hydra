@@ -1840,9 +1840,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
           lookahead == ' ') ADVANCE(82);
       if (lookahead != 0 &&
           lookahead != '\t' &&
-          lookahead != '\n' &&
-          lookahead != 0x17f &&
-          lookahead != 0x212a) ADVANCE(84);
+          lookahead != '\n') ADVANCE(84);
       END_STATE();
     case 6:
       if (lookahead == '"') ADVANCE(81);
@@ -2259,9 +2257,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
           lookahead != '\t' &&
           lookahead != '\n' &&
           lookahead != '"' &&
-          lookahead != '\\' &&
-          lookahead != 0x17f &&
-          lookahead != 0x212a) ADVANCE(84);
+          lookahead != '\\') ADVANCE(84);
       END_STATE();
     case 83:
       ACCEPT_TOKEN(sym_string_content);
@@ -2269,18 +2265,14 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       if (lookahead != 0 &&
           lookahead != '\n' &&
           lookahead != '"' &&
-          lookahead != '\\' &&
-          lookahead != 0x17f &&
-          lookahead != 0x212a) ADVANCE(84);
+          lookahead != '\\') ADVANCE(84);
       END_STATE();
     case 84:
       ACCEPT_TOKEN(sym_string_content);
       if (lookahead != 0 &&
           lookahead != '\n' &&
           lookahead != '"' &&
-          lookahead != '\\' &&
-          lookahead != 0x17f &&
-          lookahead != 0x212a) ADVANCE(84);
+          lookahead != '\\') ADVANCE(84);
       END_STATE();
     case 85:
       ACCEPT_TOKEN(sym_escape_sequence);
@@ -2315,9 +2307,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
     case 91:
       ACCEPT_TOKEN(sym_comment);
       if (lookahead != 0 &&
-          lookahead != '\n' &&
-          lookahead != 0x17f &&
-          lookahead != 0x212a) ADVANCE(91);
+          lookahead != '\n') ADVANCE(91);
       END_STATE();
     case 92:
       ACCEPT_TOKEN(sym__newline);

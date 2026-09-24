@@ -13,6 +13,10 @@
 ((identifier) @constant
   (#match? @constant "^[A-Z][A-Z0-9_]*$"))
 
+; `_` binds nothing: it is where a result is consumed and dropped (§8.1).
+((identifier) @variable.builtin
+  (#eq? @variable.builtin "_"))
+
 ; ------------------------------------------------------------------- keywords
 
 "fn" @keyword.function

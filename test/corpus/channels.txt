@@ -124,7 +124,7 @@ The channel calls inside a block
 ================================================================================
 
 parallel
-	send(job, 1, mode = .detach) || work, ch := receive(0)
+	send(job, 1, mode = :detach) || work, ch := receive(0)
 	                             || print(channel())
 end
 

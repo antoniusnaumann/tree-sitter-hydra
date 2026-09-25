@@ -35,8 +35,6 @@
 ] @keyword.control.repeat
 
 [
-  "break"
-  "continue"
   "end"
 ] @keyword.control
 
@@ -124,6 +122,7 @@
 ] @punctuation.delimiter
 
 (field_expression "." @punctuation.delimiter)
+(field_continuation "." @punctuation.delimiter)
 
 (qualified_identifier "::" @punctuation.delimiter)
 
@@ -141,21 +140,13 @@
 
 (comment) @comment
 
-; A symbol is an interned tag compared by identity (§5) — `.null` and `.true`
-; are nothing but the ones the language happens to lean on, so every symbol is
-; coloured alike. The children are captured too, so the dot and the name are
-; never coloured apart.
-(symbol) @constant.builtin
-
-(symbol
-  (symbol_name) @constant.builtin)
-
-(symbol
-  (string) @constant.builtin)
+; Only an atom's payload is a constant; its colon is a delimiter.
+(symbol (symbol_name) @constant)
+(symbol (string) @constant)
 
 ; -------------------------------------------------------------- keys and tags
 
-; `d.a` is a key lookup, and is exactly `d[.a]` (§5). This comes before the
+; `d.a` is a key lookup, and is exactly `d[:a]` (§5). This comes before the
 ; function rules on purpose: `d.f(…)` is a *call* — the field when it holds one,
 ; and otherwise `f(d, …)` (§5.2) — so the call rule below has to win over this
 ; one for the same node.
@@ -196,7 +187,7 @@
 (call_expression
   function: (identifier) @function.builtin
   (#any-of? @function.builtin
-    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel" "reject"))
+    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel" "reject" "break" "continue"))
 
 ; `::name` with the module omitted is the language's own namespace, which is how
 ; a builtin is reached past a shadow (§7). The anchor is what says "no module".
@@ -206,7 +197,7 @@
     "::"
     name: (identifier) @function.builtin)
   (#any-of? @function.builtin
-    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel" "reject"))
+    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel" "reject" "break" "continue"))
 
 ; The `*` that closes a parameter list is not multiplication (channels §6.1),
 ; and neither is the one that asks for a module's names unqualified (§7).
@@ -232,13 +223,37 @@
 (label
   name: (identifier) @label)
 
-(break_statement
-  label: (identifier) @label)
+; A continued field in a parallel column has its receiver in the previous row.
+(field_continuation
+  key: (identifier) @variable.other.member)
 
-(continue_statement
-  label: (identifier) @label)
+(field_continuation
+  key: (string) @variable.other.member)
 
-; `break trail` ends the innermost trail from any depth; `trail` is a reserved
-; label, not an identifier (§9.6).
-(break_statement
-  "trail" @label)
+(call_expression
+  function: (field_continuation
+    key: (identifier) @function))
+
+(call_expression
+  function: (field_continuation
+    key: (qualified_identifier
+      name: (identifier) @function)))
+
+; Standard control handlers share return's control-flow highlighting.
+(symbol
+  (symbol_name) @keyword.control.return
+  (#any-of? @keyword.control.return "exit" "panic" "reject"))
+
+(symbol
+  (string) @keyword.control.return
+  (#any-of? @keyword.control.return "\"exit\"" "\"panic\"" "\"reject\""))
+
+(call_expression
+  function: (identifier) @keyword.control.return
+  (#any-of? @keyword.control.return "exit" "panic" "reject"))
+
+(call_expression
+  function: (qualified_identifier
+    . "::"
+    name: (identifier) @keyword.control.return)
+  (#any-of? @keyword.control.return "exit" "panic" "reject"))

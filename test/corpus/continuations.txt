@@ -1,0 +1,515 @@
+================================================================================
+Lookup and call continuation
+================================================================================
+
+foo
+.bar
+.baz
+foo
+.method
+(1)
+[0]
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (field_expression
+      (field_expression
+        (identifier)
+        (identifier))
+      (identifier)))
+  (expression_statement
+    (index_expression
+      (call_expression
+        (field_expression
+          (identifier)
+          (identifier))
+        (arguments
+          (argument
+            (number))))
+      (number))))
+
+================================================================================
+Leading and trailing operators preserve precedence
+================================================================================
+
+32
+-a
+10
+-2
+*3
+a +
+b *
+c
+a
+and b
+or c
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (binary_expression
+      (number)
+      (identifier)))
+  (expression_statement
+    (binary_expression
+      (number)
+      (binary_expression
+        (number)
+        (number))))
+  (expression_statement
+    (binary_expression
+      (identifier)
+      (binary_expression
+        (identifier)
+        (identifier))))
+  (expression_statement
+    (binary_expression
+      (binary_expression
+        (identifier)
+        (identifier))
+      (identifier))))
+
+================================================================================
+Blank lines separate naked expressions
+================================================================================
+
+32
+
+-a
+foo
+ 	
+:bar
+f
+
+(1)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (number))
+  (expression_statement
+    (unary_expression
+      (identifier)))
+  (expression_statement
+    (identifier))
+  (expression_statement
+    (symbol
+      (symbol_name)))
+  (expression_statement
+    (identifier))
+  (expression_statement
+    (parenthesized_expression
+      (number))))
+
+================================================================================
+Comment-only lines are transparent
+================================================================================
+
+foo // receiver
+// explanation
+.bar
+a +
+// operand
+b
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (field_expression
+      (identifier)
+      (comment)
+      (comment)
+      (identifier)))
+  (expression_statement
+    (binary_expression
+      (identifier)
+      (comment)
+      (identifier))))
+
+================================================================================
+Punctuation belongs to atoms and collections still delimit them
+================================================================================
+
+:some-other-prop+interesting_added_info
+
+[:a.b,:trailing-,:x*y]
+{:a+b::c*d,:e/f::g=?!}
+.a// comment
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (symbol
+      (symbol_name)))
+  (expression_statement
+    (list
+      (symbol
+        (symbol_name))
+      (symbol
+        (symbol_name))
+      (symbol
+        (symbol_name))))
+  (expression_statement
+    (field_expression
+      (dict
+        (pair
+          (symbol
+            (symbol_name))
+          (symbol
+            (symbol_name)))
+        (pair
+          (symbol
+            (symbol_name))
+          (symbol
+            (symbol_name))))
+      (identifier)))
+  (comment))
+
+================================================================================
+Multiline assignments and collections
+================================================================================
+
+x
+:=
+[
+1,
+2
+]
+x
++=
+3
+f(
+name
+=
+1
+)
+{
+:a:
+1,
+:b:
+2
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    (identifier)
+    (list
+      (number)
+      (number)))
+  (assignment
+    (identifier)
+    (number))
+  (expression_statement
+    (call_expression
+      (identifier)
+      (arguments
+        (argument
+          (identifier)
+          (number)))))
+  (expression_statement
+    (dict
+      (pair
+        (symbol
+          (symbol_name))
+        (number))
+      (pair
+        (symbol
+          (symbol_name))
+        (number)))))
+
+================================================================================
+Parallel continuation stays in its column
+================================================================================
+
+parallel
+foo || 32
+.bar || -2
+.baz || *3
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (identifier)))
+      (cell
+        (expression_statement
+          (number))))
+    (row
+      (cell
+        (expression_statement
+          (field_continuation
+            (identifier))))
+      (cell
+        (operator_continuation
+          (number))))
+    (row
+      (cell
+        (expression_statement
+          (field_continuation
+            (identifier))))
+      (cell
+        (operator_continuation
+          (number))))))
+
+================================================================================
+Blank rows and empty cells stop parallel continuation
+================================================================================
+
+parallel
+foo || bar
+ || .next
+:atom || .last
+
+:fresh || :fresh
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (identifier)))
+      (cell
+        (expression_statement
+          (identifier))))
+    (row
+      (cell
+        (expression_statement
+          (field_continuation
+            (identifier)))))
+    (row
+      (cell
+        (expression_statement
+          (symbol
+            (symbol_name))))
+      (cell
+        (expression_statement
+          (field_continuation
+            (identifier)))))
+    (row
+      (cell
+        (expression_statement
+          (symbol
+            (symbol_name))))
+      (cell
+        (expression_statement
+          (symbol
+            (symbol_name)))))))
+
+================================================================================
+Comments preserve parallel continuation
+================================================================================
+
+parallel
+foo || bar
+// a comment
+.key || .key
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (identifier)))
+      (cell
+        (expression_statement
+          (identifier))))
+    (comment)
+    (row
+      (cell
+        (expression_statement
+          (field_continuation
+            (identifier))))
+      (cell
+        (expression_statement
+          (field_continuation
+            (identifier)))))))
+
+================================================================================
+Parallel atoms retain punctuation and trail separators
+================================================================================
+
+parallel
+:a+b||:c*d
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (symbol
+            (symbol_name))))
+      (cell
+        (expression_statement
+          (symbol
+            (symbol_name)))))))
+
+================================================================================
+Continued method calls in parallel columns
+================================================================================
+
+parallel
+foo || bar
+.method(1) || .other(2)
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (identifier)))
+      (cell
+        (expression_statement
+          (identifier))))
+    (row
+      (cell
+        (expression_statement
+          (call_expression
+            (field_continuation
+              (identifier))
+            (arguments
+              (argument
+                (number))))))
+      (cell
+        (expression_statement
+          (call_expression
+            (field_continuation
+              (identifier))
+            (arguments
+              (argument
+                (number)))))))))
+
+================================================================================
+Comment markers and trail separators inside strings stay literal
+================================================================================
+
+x := "// not a comment"
+y := "https://example.com"
+z := " a // b"
+p := :"// symbol"
+parallel
+x = "// cell" || y = "|| cell"
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declaration
+    (identifier)
+    (string
+      (string_content)))
+  (declaration
+    (identifier)
+    (string
+      (string_content)))
+  (declaration
+    (identifier)
+    (string
+      (string_content)))
+  (declaration
+    (identifier)
+    (symbol
+      (string
+        (string_content))))
+  (parallel_statement
+    (row
+      (cell
+        (assignment
+          (identifier)
+          (string
+            (string_content))))
+      (cell
+        (assignment
+          (identifier)
+          (string
+            (string_content)))))))
+
+================================================================================
+Colon atoms start statements without blank lines
+================================================================================
+foo
+:bar
+:break
+:continue
+break()
+continue()
+{:name:"Hydra",:status::ready}
+parallel
+foo || bar
+:break || :continue
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (identifier))
+  (expression_statement
+    (symbol
+      (symbol_name)))
+  (expression_statement
+    (symbol
+      (symbol_name)))
+  (expression_statement
+    (symbol
+      (symbol_name)))
+  (expression_statement
+    (call_expression
+      (identifier)
+      (arguments)))
+  (expression_statement
+    (call_expression
+      (identifier)
+      (arguments)))
+  (expression_statement
+    (dict
+      (pair
+        (symbol
+          (symbol_name))
+        (string
+          (string_content)))
+      (pair
+        (symbol
+          (symbol_name))
+        (symbol
+          (symbol_name)))))
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (identifier)))
+      (cell
+        (expression_statement
+          (identifier))))
+    (row
+      (cell
+        (expression_statement
+          (symbol
+            (symbol_name))))
+      (cell
+        (expression_statement
+          (symbol
+            (symbol_name)))))))

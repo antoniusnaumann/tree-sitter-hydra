@@ -3,9 +3,9 @@
  * @author Antonius Naumann
  * @license MIT
  *
- * Two things in here are not the usual thing, and both fall out of the same
- * rule: a newline terminates a statement (spec §1), so `\n` is deliberately
- * *not* an extra.
+ * Newlines remain visible to the grammar: single newlines may continue an
+ * expression, but blank lines end it. The external scanner recognizes soft
+ * newlines without swallowing comments or weakening operator precedence.
  *
  *   * **Compound keywords.** `else if`, `parallel for`, `parallel while`,
  *     `race for` and `race while` are single keywords whose internal whitespace
@@ -63,18 +63,27 @@ const PREC = {
 export default grammar({
   name: "hydra",
 
-  // No `\n`: it terminates a statement, so the grammar has to see it.
+  // Newlines are contextual tokens, never unconditional whitespace.
   extras: ($) => [/[ \t\r]/, $.comment],
+
+  externals: ($) => [
+    $._continuation, $._soft_newline, $.symbol_name,
+    $._or_newline, $._and_newline, $._compare_newline, $._bit_or_newline,
+    $._bit_xor_newline, $._bit_and_newline, $._shift_newline, $._add_newline,
+    $._multiply_newline, $._postfix_newline, $._assign_newline, $._namespace_newline,
+    $._parallel_start, $._parallel_end, $._row_newline, $._trail_separator,
+    $._cell_start, $._continued_cell_start, $.comment, $.string_content,
+    $._error_sentinel,
+  ],
 
   word: ($) => $.identifier,
 
   supertypes: ($) => [$._statement, $._expression],
 
   conflicts: ($) => [
-    // A comma list of targets belongs to whichever of `:=` and `=` follows it,
-    // and a name at the head of one does not say which: `a, b := …` declares
-    // and `a, b = …` assigns, so the name is either a declaration's or an
-    // expression (channels §6.2).
+    // A continued `=` can introduce a named argument or a parameter default.
+    [$._expression, $.argument],
+    [$.parameter],
     [$.declaration, $._expression],
   ],
 
@@ -103,14 +112,11 @@ export default grammar({
         $._simple_statement,
       ),
 
-    // Everything that fits on one line, which is also everything a cell of a
-    // parallel block may hold whole.
+    // Statements without a nested block. Expressions may span soft newlines.
     _simple_statement: ($) =>
       choice(
         $.declaration,
         $.assignment,
-        $.break_statement,
-        $.continue_statement,
         $.return_statement,
         $.expression_statement,
       ),
@@ -136,7 +142,7 @@ export default grammar({
       ),
 
     parameters: ($) =>
-      seq("(", optional(seq($.parameter, repeat(seq(",", $.parameter)))), ")"),
+      seq("(", soft($), optional(seq($.parameter, repeat(seq(cont($), ",", soft($), $.parameter)))), cont($), ")"),
 
     // `&name` requires the *call* to pass a reference (§5.1); `name = expr`
     // gives a default, and the two never combine. `name*` collects the rest of
@@ -150,7 +156,7 @@ export default grammar({
           optional("&"),
           field("name", $.identifier),
           optional("*"),
-          optional(seq("=", field("default", $._expression))),
+          optional(seq(cont($), "=", soft($), field("default", $._expression))),
         ),
       ),
 
@@ -160,16 +166,16 @@ export default grammar({
     declaration: ($) =>
       seq(
         field("name", $.identifier),
-        repeat(seq(",", field("name", $.identifier))),
-        ":=",
+        repeat(seq(cont($), ",", soft($), field("name", $.identifier))),
+        cont($, "assign"), ":=", soft($),
         field("value", $._expression),
       ),
 
     assignment: ($) =>
       seq(
         field("target", $._expression),
-        repeat(seq(",", field("target", $._expression))),
-        field("operator", choice("=", ...COMPOUND_ASSIGN)),
+        repeat(seq(cont($), ",", soft($), field("target", $._expression))),
+        cont($, "assign"), field("operator", choice("=", ...COMPOUND_ASSIGN)), soft($),
         field("value", $._expression),
       ),
 
@@ -220,7 +226,7 @@ export default grammar({
         "end",
       ),
 
-    // `as name` labels a loop or a block; `break name` targets it (§9.6).
+    // `as name` names a block for channel selection.
     label: ($) => seq("as", field("name", $.identifier)),
 
     // The row form (§4). Every row carries the same number of `||`, which is
@@ -229,32 +235,39 @@ export default grammar({
       seq(
         field("kind", choice("parallel", "race")),
         optional(field("label", $.label)),
-        $._newline,
-        repeat(choice($._newline, $.row)),
-        "end",
+        $._parallel_start,
+        repeat(choice($._row_newline, $.row)),
+        alias($._parallel_end, "end"),
       ),
 
-    row: ($) =>
-      seq(
-        optional($.cell),
-        repeat1(seq("||", optional($.cell))),
-        $._newline,
-      ),
+    row: ($) => seq(
+      optional($.cell),
+      repeat1(seq(alias($._trail_separator, "||"), optional($.cell))),
+      $._row_newline,
+    ),
 
-    // One cell is one line of one trail: a whole statement, or the header of a
-    // block whose body continues in the rows below it (§4).
-    cell: ($) =>
-      choice(
-        $._simple_statement,
-        $.use_statement,
-        $.function_head,
-        $.if_head,
-        $.else_if_head,
-        $.else_head,
-        $.for_head,
-        $.while_head,
-        $.end_marker,
-      ),
+    // The tree stays row-wise. The scanner remembers whether the preceding
+    // cell in this column can continue, so a leading dot is a member only then.
+    cell: ($) => choice(
+      seq($._cell_start, choice(
+        $._simple_statement, $.use_statement, $.function_head, $.if_head,
+        $.else_if_head, $.else_head, $.for_head, $.while_head, $.end_marker,
+      )),
+      $.expression_statement,
+      $.operator_continuation,
+    ),
+
+    field_continuation: ($) => seq(
+      $._continued_cell_start, ".",
+      field("key", choice($.identifier, $.string, $.qualified_identifier)),
+    ),
+    call_continuation: ($) => seq($._continued_cell_start, $.arguments),
+    index_continuation: ($) => seq($._continued_cell_start, "[", $._expression, "]"),
+    operator_continuation: ($) => seq(
+      $._continued_cell_start,
+      field("operator", choice("and", "or", "==", "!=", "===", "!==", "<", ">", "<=", ">=", "|", "^", "&", "<<", ">>", ">>>", "+", "-", "*", "/", "%", "=", ":=", ...COMPOUND_ASSIGN)),
+      field("right", $._expression),
+    ),
 
     function_head: ($) =>
       seq("fn", field("name", $.identifier), field("parameters", $.parameters)),
@@ -308,18 +321,10 @@ export default grammar({
         "end",
       ),
 
-    // `trail` is a reserved label, not an identifier: it ends the innermost
-    // trail from any depth (§9.6).
-    break_statement: ($) =>
-      seq("break", optional(choice(field("label", $.identifier), "trail"))),
-
-    continue_statement: ($) =>
-      seq("continue", optional(field("label", $.identifier))),
-
     // `return a, b`: the first value is the meaningful one and the rest are
     // additional information (channels §6.2).
     return_statement: ($) =>
-      seq("return", optional(seq($._expression, repeat(seq(",", $._expression))))),
+      seq("return", optional(seq($._expression, repeat(seq(cont($), ",", soft($), $._expression))))),
 
     expression_statement: ($) => $._expression,
 
@@ -340,9 +345,12 @@ export default grammar({
         $.reference_expression,
         $.binary_expression,
         $.parenthesized_expression,
+        $.field_continuation,
+        $.call_continuation,
+        $.index_continuation,
       ),
 
-    parenthesized_expression: ($) => seq("(", $._expression, ")"),
+    parenthesized_expression: ($) => seq("(", soft($), $._expression, cont($), ")"),
 
     // Whether a closure is single-expression or multi-line is decided by
     // whether anything follows the `)` on the same line (§3).
@@ -359,30 +367,30 @@ export default grammar({
     call_expression: ($) =>
       prec(
         PREC.postfix,
-        seq(field("function", $._expression), field("arguments", $.arguments)),
+        seq(field("function", $._expression), cont($, "postfix"), field("arguments", $.arguments)),
       ),
 
     arguments: ($) =>
-      seq("(", optional(seq($.argument, repeat(seq(",", $.argument)))), ")"),
+      seq("(", soft($), optional(seq($.argument, repeat(seq(cont($), ",", soft($), $.argument)))), cont($), ")"),
 
     // `f(a, width = 2)` fills a parameter by name (§3). There is no ambiguity
     // with assignment: assignment is a statement, so it never appears here.
     argument: ($) =>
-      choice(seq(field("name", $.identifier), "=", $._expression), $._expression),
+      choice(seq(field("name", $.identifier), cont($), "=", soft($), $._expression), $._expression),
 
     index_expression: ($) =>
       prec(
         PREC.postfix,
         seq(
           field("object", $._expression),
-          "[",
+          cont($, "postfix"), "[", soft($),
           field("index", $._expression),
-          "]",
+          cont($), "]",
         ),
       ),
 
-    // `d.a` is exactly `d[.a]` (§5) — a dot directly after an expression is a
-    // key lookup, and a dot in leading position opens a symbol.
+    // `d.a` is exactly `d[:a]` (§5) — a dot directly after an expression is a
+    // key lookup. A colon opens an atom.
     // The key may also be qualified — `path.fs::read(…)` is `fs::read(path, …)`
     // (§5.2, §7) — which only means anything with a call after it.
     field_expression: ($) =>
@@ -390,7 +398,7 @@ export default grammar({
         PREC.postfix,
         seq(
           field("object", $._expression),
-          ".",
+          cont($, "postfix"), ".", soft($),
           field("key", choice($.identifier, $.string, $.qualified_identifier)),
         ),
       ),
@@ -400,25 +408,25 @@ export default grammar({
     qualified_identifier: ($) =>
       prec(
         PREC.postfix,
-        seq(optional(field("module", $.identifier)), "::", field("name", $.identifier)),
+        seq(optional(seq(field("module", $.identifier), cont($, "namespace"))), "::", soft($), field("name", $.identifier)),
       ),
 
     unary_expression: ($) =>
       choice(
         prec.right(
           PREC.unary,
-          seq(field("operator", choice("-", "~")), field("operand", $._expression)),
+          seq(field("operator", choice("-", "~")), soft($), field("operand", $._expression)),
         ),
         prec.right(
           PREC.not,
-          seq(field("operator", "not"), field("operand", $._expression)),
+          seq(field("operator", "not"), soft($), field("operand", $._expression)),
         ),
       ),
 
     // `&lvalue` passes a reference instead of a copy — the caller marks it,
     // never the callee (§5.1). It is the marker for shared mutable state.
     reference_expression: ($) =>
-      prec.right(PREC.unary, seq("&", field("target", $._expression))),
+      prec.right(PREC.unary, seq("&", soft($), field("target", $._expression))),
 
     binary_expression: ($) => {
       const table = [
@@ -451,7 +459,7 @@ export default grammar({
             Number(precedence),
             seq(
               field("left", $._expression),
-              field("operator", operator),
+              cont($, Object.keys(PREC).find(key => PREC[key] === precedence)), field("operator", operator), soft($),
               field("right", $._expression),
             ),
           ),
@@ -460,25 +468,17 @@ export default grammar({
     },
 
     list: ($) =>
-      seq("[", optional(seq($._expression, repeat(seq(",", $._expression)))), "]"),
+      seq("[", soft($), optional(seq($._expression, repeat(seq(cont($), ",", soft($), $._expression)))), cont($), "]"),
 
     // Keys are symbols, always (§2).
-    dict: ($) => seq("{", optional(seq($.pair, repeat(seq(",", $.pair)))), "}"),
+    dict: ($) => seq("{", soft($), optional(seq($.pair, repeat(seq(cont($), ",", soft($), $.pair)))), cont($), "}"),
 
-    pair: ($) => seq(field("key", $.symbol), ":", field("value", $._expression)),
+    pair: ($) => seq(field("key", $.symbol), cont($), ":", soft($), field("value", $._expression)),
 
-    // `.name`, `.x-req-id`, `."not a name"`, and `."\(prefix)-id"` — a quoted
-    // symbol may interpolate, which is how a symbol is built from data (§2).
-    //
-    // A symbol's name may contain `-`, as long as it is internal: subtracting
-    // one symbol from another is nonsense, so `.x-req-id` can only have been
-    // meant as one name. A *key lookup* is not a symbol literal and keeps the
-    // `-` as an operator, which is why `field_expression` takes a plain
-    // identifier and this does not.
-    symbol: ($) => seq(".", field("name", choice($.symbol_name, $.string))),
+    // Bare atoms consume punctuation until whitespace, ()[]{},:", // or ||.
+    // The scanner gives symbol names maximal munch; lookups keep identifiers.
+    symbol: ($) => seq(":", field("name", choice($.symbol_name, $.string))),
 
-    symbol_name: (_) =>
-      token.immediate(/[A-Za-z_][A-Za-z0-9_]*(-[A-Za-z0-9_]+)*/),
 
     string: ($) =>
       seq(
@@ -487,7 +487,6 @@ export default grammar({
         '"',
       ),
 
-    string_content: (_) => token.immediate(prec(1, /[^"\\\n]+/)),
 
     escape_sequence: (_) => token.immediate(/\\["\\nrt0]/),
 
@@ -503,8 +502,11 @@ export default grammar({
     // reachable through `::` (§2).
     identifier: (_) => /[A-Za-z_][A-Za-z0-9_]*/,
 
-    comment: (_) => token(seq("//", /[^\n]*/)),
-
     _newline: (_) => token(/\r?\n/),
   },
 });
+
+// A newline before an optional suffix needs lookahead; after an operator or
+// opening delimiter the syntax already requires continuation.
+function cont($, kind) { return optional(repeat1(kind ? $[`_${kind}_newline`] : $._continuation)); }
+function soft($) { return optional(repeat1($._soft_newline)); }

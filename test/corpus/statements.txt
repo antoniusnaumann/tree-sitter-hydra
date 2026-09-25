@@ -135,14 +135,14 @@ push(&seen, region)
           (identifier))))))
 
 ================================================================================
-Labels, break and continue
+Control atoms and builtin functions
 ================================================================================
 
 while alive() as outer
-	break outer
-	continue outer
-	break trail
-	break
+	break()
+	continue()
+	:continue
+	:break
 end
 
 --------------------------------------------------------------------------------
@@ -155,12 +155,20 @@ end
     label: (label
       name: (identifier))
     body: (block
-      (break_statement
-        label: (identifier))
-      (continue_statement
-        label: (identifier))
-      (break_statement)
-      (break_statement))))
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments)))
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments)))
+      (expression_statement
+        (symbol
+          name: (symbol_name)))
+      (expression_statement
+        (symbol
+          name: (symbol_name))))))
 
 ================================================================================
 The three forms of `use`

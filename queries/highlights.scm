@@ -38,7 +38,9 @@
   "end"
 ] @keyword.control
 
-"return" @keyword.control.return
+(expression_statement
+  (identifier) @keyword.control.return
+  (#eq? @keyword.control.return "return"))
 
 [
   "and"
@@ -169,6 +171,13 @@
   function: (field_expression
     key: (identifier) @function))
 
+; `x.mod::f(…)` is `mod::f(x, …)` (§5.2): the name after the selector is the
+; function, and the module before it a namespace like any other.
+(call_expression
+  function: (field_expression
+    key: (qualified_identifier
+      name: (identifier) @function)))
+
 (function_definition
   name: (identifier) @function)
 
@@ -187,7 +196,7 @@
 (call_expression
   function: (identifier) @function.builtin
   (#any-of? @function.builtin
-    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel" "reject" "break" "continue"))
+    "print" "has" "get" "len" "is_empty" "push" "alive" "send" "receive" "channel" "reject" "break" "continue"))
 
 ; `::name` with the module omitted is the language's own namespace, which is how
 ; a builtin is reached past a shadow (§7). The anchor is what says "no module".
@@ -197,7 +206,7 @@
     "::"
     name: (identifier) @function.builtin)
   (#any-of? @function.builtin
-    "print" "has" "get" "len" "push" "alive" "send" "receive" "channel" "reject" "break" "continue"))
+    "print" "has" "get" "len" "is_empty" "push" "alive" "send" "receive" "channel" "reject" "break" "continue"))
 
 ; The `*` that closes a parameter list is not multiplication (channels §6.1),
 ; and neither is the one that asks for a module's names unqualified (§7).
@@ -242,18 +251,32 @@
 ; Standard control handlers share return's control-flow highlighting.
 (symbol
   (symbol_name) @keyword.control.return
-  (#any-of? @keyword.control.return "exit" "panic" "reject"))
+  (#any-of? @keyword.control.return "exit" "panic" "reject" "return"))
 
 (symbol
   (string) @keyword.control.return
-  (#any-of? @keyword.control.return "\"exit\"" "\"panic\"" "\"reject\""))
+  (#any-of? @keyword.control.return "\"exit\"" "\"panic\"" "\"reject\"" "\"return\""))
 
 (call_expression
   function: (identifier) @keyword.control.return
-  (#any-of? @keyword.control.return "exit" "panic" "reject"))
+  (#any-of? @keyword.control.return "exit" "panic" "reject" "return"))
 
 (call_expression
   function: (qualified_identifier
     . "::"
     name: (identifier) @keyword.control.return)
-  (#any-of? @keyword.control.return "exit" "panic" "reject"))
+  (#any-of? @keyword.control.return "exit" "panic" "reject" "return"))
+
+(command_call function: (identifier) @function)
+(command_call function: (qualified_identifier name: (identifier) @function))
+(command_call function: (field_expression key: (identifier) @function))
+(command_call function: (field_expression key: (qualified_identifier name: (identifier) @function)))
+(command_call
+  function: (identifier) @keyword.control.return
+  (#any-of? @keyword.control.return "return" "reject" "exit" "panic"))
+(command_call
+  function: (qualified_identifier . "::" name: (identifier) @keyword.control.return)
+  (#any-of? @keyword.control.return "return" "reject" "exit" "panic"))
+
+(command_call function: (field_continuation key: (identifier) @function))
+(command_call function: (field_continuation key: (qualified_identifier name: (identifier) @function)))

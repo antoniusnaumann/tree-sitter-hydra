@@ -73,7 +73,7 @@ export default grammar({
     $._multiply_newline, $._postfix_newline, $._assign_newline, $._namespace_newline,
     $._parallel_start, $._parallel_end, $._row_newline, $._trail_separator,
     $._cell_start, $._continued_cell_start, $.comment, $.string_content,
-    $._error_sentinel,
+    $._command_gap, $._error_sentinel,
   ],
 
   word: ($) => $.identifier,
@@ -117,7 +117,6 @@ export default grammar({
       choice(
         $.declaration,
         $.assignment,
-        $.return_statement,
         $.expression_statement,
       ),
 
@@ -168,7 +167,7 @@ export default grammar({
         field("name", $.identifier),
         repeat(seq(cont($), ",", soft($), field("name", $.identifier))),
         cont($, "assign"), ":=", soft($),
-        field("value", $._expression),
+        field("value", $._outer_expression),
       ),
 
     assignment: ($) =>
@@ -176,7 +175,7 @@ export default grammar({
         field("target", $._expression),
         repeat(seq(cont($), ",", soft($), field("target", $._expression))),
         cont($, "assign"), field("operator", choice("=", ...COMPOUND_ASSIGN)), soft($),
-        field("value", $._expression),
+        field("value", $._outer_expression),
       ),
 
     if_statement: ($) =>
@@ -265,8 +264,10 @@ export default grammar({
     index_continuation: ($) => seq($._continued_cell_start, "[", $._expression, "]"),
     operator_continuation: ($) => seq(
       $._continued_cell_start,
-      field("operator", choice("and", "or", "==", "!=", "===", "!==", "<", ">", "<=", ">=", "|", "^", "&", "<<", ">>", ">>>", "+", "-", "*", "/", "%", "=", ":=", ...COMPOUND_ASSIGN)),
-      field("right", $._expression),
+      choice(
+        seq(field("operator", choice("=", ":=", ...COMPOUND_ASSIGN)), field("right", $._outer_expression)),
+        seq(field("operator", choice("and", "or", "==", "!=", "===", "!==", "<", ">", "<=", ">=", "|", "^", "&", "<<", ">>", ">>>", "+", "-", "*", "/", "%")), field("right", $._expression)),
+      ),
     ),
 
     function_head: ($) =>
@@ -321,12 +322,18 @@ export default grammar({
         "end",
       ),
 
-    // `return a, b`: the first value is the meaningful one and the rest are
-    // additional information (channels §6.2).
-    return_statement: ($) =>
-      seq("return", optional(seq($._expression, repeat(seq(cont($), ",", soft($), $._expression))))),
+    expression_statement: ($) => $._outer_expression,
 
-    expression_statement: ($) => $._expression,
+    // Only statements and assignment RHSs admit this form; arguments remain
+    // ordinary expressions, so an unparenthesized call cannot be nested.
+    _outer_expression: ($) => choice($.command_call, $._expression),
+    command_call: ($) => prec.right(seq(
+      optional(field("reference", "&")),
+      field("function", choice($.identifier, $.qualified_identifier, $.field_expression, $.index_expression, $.field_continuation)),
+      $._command_gap,
+      field("arguments", $.command_arguments),
+    )),
+    command_arguments: ($) => seq($.argument, repeat(seq(cont($), ",", soft($), $.argument))),
 
     _expression: ($) =>
       choice(

@@ -10,7 +10,7 @@ enum TokenType {
   MULTIPLY_NEWLINE, POSTFIX_NEWLINE, ASSIGN_NEWLINE, NAMESPACE_NEWLINE,
   PARALLEL_START, PARALLEL_END, ROW_NEWLINE, TRAIL_SEPARATOR,
   CELL_START, CONTINUED_CELL_START, COMMENT, STRING_CONTENT,
-  ERROR_SENTINEL
+  COMMAND_GAP, ERROR_SENTINEL
 };
 
 // One bit per trail; state is serialized so incremental edits can change a
@@ -84,12 +84,39 @@ bool tree_sitter_hydra_external_scanner_scan(void *payload, TSLexer *lexer, cons
     return true;
   }
 
+  // A command call starts across horizontal whitespace only. Preserve
+  // operators with surrounding spaces and all existing newline continuation.
+  if (valid[COMMAND_GAP] && (lexer->lookahead == ' ' || lexer->lookahead == '\t')) {
+    do { advance(lexer); } while (lexer->lookahead == ' ' || lexer->lookahead == '\t');
+    lexer->mark_end(lexer);
+    int32_t c = lexer->lookahead;
+    bool argument = c == '[' || c == '{' || c == '"' || c == ':' || c == '~'
+      || (c >= '0' && c <= '9');
+    if (c == ':') {
+      advance(lexer);
+      argument = lexer->lookahead != '=';
+    } else if (c == '-' || c == '&') {
+      advance(lexer);
+      argument = lexer->lookahead && lexer->lookahead != '=' && !iswspace(lexer->lookahead);
+    } else if (ident_start(c)) {
+      char word[32]; unsigned n = 0;
+      do { if (n < sizeof(word) - 1) word[n++] = (char)lexer->lookahead; advance(lexer); }
+      while (ident_char(lexer->lookahead));
+      word[n] = 0;
+      argument = strcmp(word, "and") && strcmp(word, "or") && strcmp(word, "as")
+        && strcmp(word, "end") && strcmp(word, "else") && strcmp(word, "in");
+    }
+    if (argument) { lexer->result_symbol = COMMAND_GAP; return true; }
+    if (c == '-' || c == '&' || c == ':' || ident_start(c)) return false;
+  }
+
   while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r') lexer->advance(lexer, true);
   if (lexer->lookahead == '/' && valid[COMMENT]) {
     advance(lexer);
     if (lexer->lookahead != '/') return false;
     while (lexer->lookahead && lexer->lookahead != '\n') advance(lexer);
     if (s->in_rows) s->comment_only = !s->started && s->column == 0;
+    lexer->mark_end(lexer);
     lexer->result_symbol = COMMENT;
     return true;
   }
@@ -101,7 +128,8 @@ bool tree_sitter_hydra_external_scanner_scan(void *payload, TSLexer *lexer, cons
       advance(lexer);
       memset(s, 0, sizeof(*s));
       s->in_rows = true;
-      lexer->result_symbol = PARALLEL_START;
+      lexer->mark_end(lexer);
+    lexer->result_symbol = PARALLEL_START;
       return true;
     }
     if (!s->in_rows) return false;
@@ -110,7 +138,8 @@ bool tree_sitter_hydra_external_scanner_scan(void *payload, TSLexer *lexer, cons
       if (!s->started && s->column == 0 && !s->comment_only) memset(s->carry, 0, sizeof(s->carry));
       else if (!s->started && !s->comment_only) set_carry(s, false);
       s->column = 0; s->started = false; s->comment_only = false;
-      lexer->result_symbol = ROW_NEWLINE;
+      lexer->mark_end(lexer);
+    lexer->result_symbol = ROW_NEWLINE;
       return true;
     }
     if (lexer->lookahead == '|' && valid[TRAIL_SEPARATOR]) {
@@ -119,7 +148,8 @@ bool tree_sitter_hydra_external_scanner_scan(void *payload, TSLexer *lexer, cons
       advance(lexer);
       if (!s->started) set_carry(s, false);
       s->column++; s->started = false;
-      lexer->result_symbol = TRAIL_SEPARATOR;
+      lexer->mark_end(lexer);
+    lexer->result_symbol = TRAIL_SEPARATOR;
       return true;
     }
     if (s->started || (!valid[CELL_START] && !valid[CONTINUED_CELL_START])) return false;

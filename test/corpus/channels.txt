@@ -107,17 +107,22 @@ end
       (parameter
         name: (identifier)))
     body: (block
-      (return_statement
-        (call_expression
+      (expression_statement
+        (command_call
           function: (identifier)
-          arguments: (arguments
+          arguments: (command_arguments
             (argument
-              (identifier))))
-        (call_expression
-          function: (identifier)
-          arguments: (arguments
+              (call_expression
+                function: (identifier)
+                arguments: (arguments
+                  (argument
+                    (identifier)))))
             (argument
-              (identifier))))))))
+              (call_expression
+                function: (identifier)
+                arguments: (arguments
+                  (argument
+                    (identifier)))))))))))
 
 ================================================================================
 The channel calls inside a block

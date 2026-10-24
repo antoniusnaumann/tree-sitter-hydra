@@ -111,3 +111,14 @@ Atoms use `:name` or `:"quoted name"`; dicts retain their separator colon:
 `break` and `continue` are ordinary builtin function names, while `:break`
 and `:continue` are atoms. The former keyword statements and labeled breaks
 are no longer part of the grammar.
+
+Calls may omit parentheses in statements and assignment RHSs (`print "hello"`,
+`x := add 1, 2`). Arguments remain comma-separated; nested calls need parentheses.
+A horizontal gap distinguishes `f -1` / `f [1]` (calls) from `f - 1` (subtraction)
+and `f[1]` (indexing). Newline continuations keep their existing meaning.
+
+`return` is now an identifier naming a builtin, like `reject`, `exit`, and `panic`.
+The builtin constructs `[:return, ...values]`; an unconsumed request returns from
+the current function. Bare `return` is a zero-argument call; other bare names
+remain values. Highlight queries use the return control scope for these builtins
+and their control atom names, keeping the atom colon a delimiter.

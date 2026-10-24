@@ -31,6 +31,19 @@ class ContinuationEdits(unittest.TestCase):
         fresh = source[:offset] + inserted + source[offset + deleted:]
         self.assertEqual(self.parse(source, f"{row},{column} {deleted} {inserted}"), self.parse(fresh))
 
+    def test_space_changes_index_to_call(self):
+        self.check_edit("f[1]\n", 0, 1, 0, " ")
+
+    def test_space_changes_negative_argument_to_subtraction(self):
+        self.check_edit("f -1\n", 0, 3, 0, " ")
+
+    def test_command_call_in_parallel(self):
+        self.check_edit("parallel\nf[1] || g -1\nend\n", 1, 1, 0, " ")
+
+    def test_nested_commands_are_rejected(self):
+        for source in ["f g 1\n", "x := f g 1\n", "f(g 1)\n", "[f 1]\n"]:
+            self.assertIn("ERROR", self.parse(source), source)
+
     def test_insert_blank_line_before_lookup(self):
         self.check_edit("foo\n.bar\n", 1, 0, 0, "\n")
 

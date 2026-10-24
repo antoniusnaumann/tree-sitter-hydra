@@ -1,0 +1,302 @@
+================================================================================
+Outer calls, return values, and first-class functions
+================================================================================
+f "hello", width = "!"
+x := add 1, len([2, 3])
+x = add 1, 2
+x += add 1, 2
+f -1
+f - 1
+f[1]
+f [1]
+f &x
+f & x
+f not x
+f :ready
+f { :name : :value }
+x.f 1
+x.mod::f 1
+
+&x.push 1
+return
+return 1, 2
+request := return(42)
+alias := return
+::return :break
+fn return(x)
+  ::return x
+end
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (string
+            (string_content)))
+        (argument
+          (identifier)
+          (string
+            (string_content))))))
+  (declaration
+    (identifier)
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (number))
+        (argument
+          (call_expression
+            (identifier)
+            (arguments
+              (argument
+                (list
+                  (number)
+                  (number)))))))))
+  (assignment
+    (identifier)
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (number))
+        (argument
+          (number)))))
+  (assignment
+    (identifier)
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (number))
+        (argument
+          (number)))))
+  (expression_statement
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (unary_expression
+            (number))))))
+  (expression_statement
+    (binary_expression
+      (identifier)
+      (number)))
+  (expression_statement
+    (index_expression
+      (identifier)
+      (number)))
+  (expression_statement
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (list
+            (number))))))
+  (expression_statement
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (reference_expression
+            (identifier))))))
+  (expression_statement
+    (binary_expression
+      (identifier)
+      (identifier)))
+  (expression_statement
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (unary_expression
+            (identifier))))))
+  (expression_statement
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (symbol
+            (symbol_name))))))
+  (expression_statement
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (dict
+            (pair
+              (symbol
+                (symbol_name))
+              (symbol
+                (symbol_name))))))))
+  (expression_statement
+    (command_call
+      (field_expression
+        (identifier)
+        (identifier))
+      (command_arguments
+        (argument
+          (number)))))
+  (expression_statement
+    (command_call
+      (field_expression
+        (identifier)
+        (qualified_identifier
+          (identifier)
+          (identifier)))
+      (command_arguments
+        (argument
+          (number)))))
+  (expression_statement
+    (command_call
+      (field_expression
+        (identifier)
+        (identifier))
+      (command_arguments
+        (argument
+          (number)))))
+  (expression_statement
+    (identifier))
+  (expression_statement
+    (command_call
+      (identifier)
+      (command_arguments
+        (argument
+          (number))
+        (argument
+          (number)))))
+  (declaration
+    (identifier)
+    (call_expression
+      (identifier)
+      (arguments
+        (argument
+          (number)))))
+  (declaration
+    (identifier)
+    (command_call
+      (qualified_identifier
+        (identifier)
+        (identifier))
+      (command_arguments
+        (argument
+          (symbol
+            (symbol_name))))))
+  (function_definition
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)))
+    (block
+      (expression_statement
+        (command_call
+          (qualified_identifier
+            (identifier))
+          (command_arguments
+            (argument
+              (identifier))))))))
+
+================================================================================
+Calls stay in their parallel columns
+================================================================================
+parallel
+  print :ready || x := add 1, 2
+  f -1 || g [1]
+  return 1 || _ = return(2)
+end
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (expression_statement
+          (command_call
+            (identifier)
+            (command_arguments
+              (argument
+                (symbol
+                  (symbol_name)))))))
+      (cell
+        (declaration
+          (identifier)
+          (command_call
+            (identifier)
+            (command_arguments
+              (argument
+                (number))
+              (argument
+                (number)))))))
+    (row
+      (cell
+        (expression_statement
+          (command_call
+            (identifier)
+            (command_arguments
+              (argument
+                (unary_expression
+                  (number)))))))
+      (cell
+        (expression_statement
+          (command_call
+            (identifier)
+            (command_arguments
+              (argument
+                (list
+                  (number))))))))
+    (row
+      (cell
+        (expression_statement
+          (command_call
+            (identifier)
+            (command_arguments
+              (argument
+                (number))))))
+      (cell
+        (assignment
+          (identifier)
+          (call_expression
+            (identifier)
+            (arguments
+              (argument
+                (number)))))))))
+
+================================================================================
+Continued command calls in parallel columns
+================================================================================
+parallel
+  x := foo || y
+  .add 1 || := add 1, 2
+end
+--------------------------------------------------------------------------------
+
+(source_file
+  (parallel_statement
+    (row
+      (cell
+        (declaration
+          (identifier)
+          (identifier)))
+      (cell
+        (expression_statement
+          (identifier))))
+    (row
+      (cell
+        (expression_statement
+          (command_call
+            (field_continuation
+              (identifier))
+            (command_arguments
+              (argument
+                (number))))))
+      (cell
+        (operator_continuation
+          (command_call
+            (identifier)
+            (command_arguments
+              (argument
+                (number))
+              (argument
+                (number)))))))))

@@ -99,8 +99,12 @@ end
           left: (identifier)
           right: (number))))
     body: (block
-      (return_statement
-        (identifier)))))
+      (expression_statement
+        (command_call
+          function: (identifier)
+          arguments: (command_arguments
+            (argument
+              (identifier))))))))
 
 ================================================================================
 Named arguments and references at the call site
